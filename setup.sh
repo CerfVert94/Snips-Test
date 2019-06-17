@@ -15,7 +15,7 @@ then
 
 fi
 
-echo $pwd
-source $VENV/bin/python
+$pwd.
+source ./$VENV/bin/activate
 
 pip install -r requirements.txt
