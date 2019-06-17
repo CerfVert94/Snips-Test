@@ -1,11 +1,11 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash -e
 
 VENV=venv
 
 if [ ! -d "$VENV" ]
 then
 
-    PYTHON=`which python2.7`
+    PYTHON=`which python2`
     echo $PYTHON
     if [ ! -f $PYTHON ]
     then
