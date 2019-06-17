@@ -16,14 +16,19 @@ client.on('message', function (topic, message) {
     } else if (topic.match(/hermes\/hotword\/.+\/detected/g) !== null) {
         onHotwordDetected()
     } else if (topic.match(/hermes\/intent\/.+/g) !== null) {
-        onIntentDetected(JSON.parse(message));
+
+	let intent  = JSON.parse(message);
+    	onIntentDetected(intent);
+	client.publish('hermes/dialogueManager/endSession', '{\"sessionId\":\"' + intent.sessionId + '\",\"text\":\"la gauche\"}');
+ 
     }
 });
 
 function onIntentDetected(intent) {
     console.log("[Snips Log] Intent detected: " + JSON.stringify(intent));
-	var cmd=require('node-cmd');
-	cmd.run('mosquitto_pub -h localhost -p 1883 -t hermes/tts/say -m "{\"text\":\"speak to me\",\"lang\":\"fr\",\"siteId\":\"default\"}"');
+    console.log("\"text\":\"la gauche\",\"lang\":\"fr\",\"siteId\":\"default\"");
+    console.log("{\"sessionId\":" + intent.sessionId + ",\"text\":\"la gauche\"}");
+   //cmd.run('mosquitto_pub -h localhost -p 1883 -t hermes/tts/say -m "{\"text\":\"speak to me\",\"lang\":\"fr\",\"siteId\":\"default\"}"');
 	
 }
 
