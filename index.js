@@ -22,6 +22,9 @@ client.on('message', function (topic, message) {
 
 function onIntentDetected(intent) {
     console.log("[Snips Log] Intent detected: " + JSON.stringify(intent));
+	var cmd=require('node-cmd');
+	cmd.run('mosquitto_pub -h localhost -p 1883 -t hermes/tts/say -m "{\"text\":\"speak to me\",\"lang\":\"fr\",\"siteId\":\"default\"}"');
+	
 }
 
 function onHotwordDetected() {
