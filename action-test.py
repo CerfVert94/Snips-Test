@@ -10,11 +10,11 @@ def intent_received(hermes, intent_message):
 	intentName = intent_message.intent.intent_name	
 
 	
-	if intentName == 'Cerfvert94:Allumage' :
-		if probability > 0.9 :
-			sentence = "J allume la lumiere"
-		else :
-			sentence = " Je n'ai pas compris"
+#	if intentName == 'Cerfvert94:Allumage' :
+#		if probability > 0.9 :
+#			sentence = "J allume la lumiere"
+#		else :
+	sentence = " Je n'ai pas compris"
 			
 			
 

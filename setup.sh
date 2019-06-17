@@ -16,6 +16,6 @@ then
 fi
 
 $pwd.
-source ./$VENV/bin/activate
+./$VENV/bin/activate
 
 pip install -r requirements.txt
