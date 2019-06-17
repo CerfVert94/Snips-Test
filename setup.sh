@@ -16,6 +16,7 @@ then
 fi
 
 $pwd.
-./$VENV/bin/activate
-
+sudo chmod a+x action*
+sudo chmod a+x ./$VENV/bin/activate
+sudo ./$VENV/bin/activate
 pip install -r requirements.txt
