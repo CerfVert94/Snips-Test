@@ -1,6 +1,6 @@
 var mqtt = require('mqtt');
 
-var hostname = "mqtt://raspberrypi.local";
+var hostname = "mqtt://localhost";
 var client  = mqtt.connect(hostname);
 
 client.on('connect', function () {
