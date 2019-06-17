@@ -1,4 +1,4 @@
-#!/usr/bin/env bash -e
+#!/usr/bin/bash
 
 VENV=venv
 
@@ -6,7 +6,7 @@ if [ ! -d "$VENV" ]
 then
 
     PYTHON=`which python2.7`
-
+    echo $PYTHON
     if [ ! -f $PYTHON ]
     then
         echo "could not find python"
