@@ -11,7 +11,7 @@ then
     then
         echo "could not find python"
     fi
-    virtualenv -p $PYTHON $VENV
+    sudo virtualenv -p $PYTHON $VENV
 
 fi
 
