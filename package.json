@@ -1,0 +1,23 @@
+{
+  "name": "snips-test",
+  "version": "1.0.0",
+  "description": "A node js script to use snips flo",
+  "main": "index.js",
+  "dependencies": {
+    "mqtt": "^3.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cerfvert94/snips-test.git"
+  },
+  "author": "Snips / Roqyun KO",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cerfvert94/snips-test/issues"
+  },
+  "homepage": "https://github.com/cerfvert94/snips-test#readme"
+}

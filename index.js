@@ -9,7 +9,7 @@ client.on('connect', function () {
 });
 
 client.on('message', function (topic, message) {
-    if (topic === "hermes/asr/startListening") {
+   if (topic === "hermes/asr/startListening") {
         onListeningStateChanged(true);
     } else if (topic === "hermes/asr/stopListening") {
         onListeningStateChanged(false);
