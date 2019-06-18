@@ -2,8 +2,8 @@ This example was originally authored by Snips and modification was made to publi
 
 To setup the default environment to run the node js script,
 Enter the following commands :
-npm init
-npm install mqtt --save
-node $ENTRY_POINT
+npm init<br/>
+npm install mqtt --save<br/>
+node $ENTRY_POINT<br/>
 
 $ENTRY_POINT is index.js in this example
