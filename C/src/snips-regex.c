@@ -4,6 +4,7 @@ Library : Limited regex parser
 Description : 
 This is a parser that is capable of only simple regular expressions.
 The regular expression format is that of node js.
+This library is created soley for the snips-action-example.
 
 1. A pattern is prefixed by a slash '/'.
 2. + and * grammar work only with one character.
@@ -13,6 +14,7 @@ The regular expression format is that of node js.
 	b. \+
 	c. \*
 	d. \/
+	e. \.
 5. No global (space isn't accepted.)
 
 Example :
@@ -21,6 +23,7 @@ Adapted pattern for the program : ABC\/DEF\/.+\/\\\\\/\\+\/
 **/
 
 #include<stdio.h>
+#include<stdarg.h>
 #include<string.h>
 #include<malloc.h>
 #include<stdlib.h>
@@ -30,10 +33,21 @@ Adapted pattern for the program : ABC\/DEF\/.+\/\\\\\/\\+\/
 
 struct _token_s {
 	char *token;
+	short type;
+	int len;
 	struct _token_s *next;
 } token_s;
 typedef struct _token_s *token_t;
 
+short identify_grammar_type(const char* pattern);
+void exit_failure(const char *format, ...) 
+{
+	va_list args;
+	va_start(args, format);
+	vfprintf(stderr, format, args);
+	va_end(args);
+	exit(EXIT_FAILURE);
+}
 // Function to tokenize the pattern
 token_t tokenize(const char* cst_patt)
 {
@@ -59,7 +73,7 @@ token_t tokenize(const char* cst_patt)
 //		printf("%d. %c\n", idx, patt[idx]);
 		// EOF or '/' signals a new pattern   
 		if ((idx == len) || ((patt[idx] == '/') && !detected_esc_seq)) {
-			// If the length of token is greater than 0, then the token exists => store it.
+			// If the length of token is greater than 0, then a token exists => store it.
 			if(token_len > 0) {
 				// Allocate a memory space for a token node.
 				new_node = (token_t)malloc(sizeof(struct _token_s) + 1);
@@ -72,9 +86,12 @@ token_t tokenize(const char* cst_patt)
 					fprintf(stderr, "Malloc failed\n");
 					exit(EXIT_FAILURE);
 				}
-				// Copy the tokenized pattern into a token node.
+				// Initialize : copy the tokenized pattern into a token node / identify its type 
 				strncpy(new_node->token, &patt[token_start], token_len);
+				new_node->type = identify_grammar_type(new_node->token);
+				new_node->len = token_len;
 				new_node->next = NULL;
+
 				// Define head, then add the rest at the tail of the singly linked list ADT.
 				if (!head) {
 					head = new_node;  
@@ -118,7 +135,7 @@ token_t tokenize(const char* cst_patt)
 #define TYPE_GRAMMAR_PLUS 0
 #define TYPE_GRAMMAR_ASTERISK 1
 #define TYPE_GRAMMAR_EXACT 2
-int identify_grammar_type(const char* pattern) {
+short identify_grammar_type(const char* pattern) {
 	int idx = 0, len = strlen(pattern); 
 	bool detected_esc_seq = false;
 	while (idx < len) {
@@ -127,10 +144,10 @@ int identify_grammar_type(const char* pattern) {
 			idx++;
 			continue;
 		}
-		else if (pattern[idx] == '+' && !detected_esc_seq) {
+		else if (pattern[idx] == '+' && !detected_esc_seq && len <= 3) {
 			return TYPE_GRAMMAR_PLUS;			
 		}
-		else if (pattern[idx] == '*' && !detected_esc_seq) {
+		else if (pattern[idx] == '*' && !detected_esc_seq && len <= 3) {
 			return TYPE_GRAMMAR_ASTERISK;			
 		}
 
@@ -139,13 +156,124 @@ int identify_grammar_type(const char* pattern) {
 	}
 	return TYPE_GRAMMAR_EXACT;
 }
+
+
+// Function to check regex (Only enough to check mqtt topic)
 bool match(const char* str, const char *pattern)
 {
-	token_t head = tokenize(pattern);
+	int idx = 0, match_len = 0, len = strlen(str);
+	char character_rule;
+	bool mode_plus, mode_asterisk, next = true;
+	token_t tok = tokenize(pattern), temp;
+	while(tok) {
+		if (idx >= len)
+			return false;
+#ifdef DEBUG_MODE
+		if(next) {
+			next = false;
+			printf("%s : ",tok->token);
+		}
+#endif
+		switch(tok->type) {
 
+			case TYPE_GRAMMAR_ASTERISK :
+				// Diffentiate an escape sequence by sign.
+				if (tok->token[0] == '\\') 
+					character_rule = -tok->token[1];
+				else 
+					character_rule = tok->token[0];
+				if(mode_plus && match_len == 0)
+					return false;
+				// If plus grammar rule was skipped without matching character, then return false
+				if(mode_plus && match_len == 0)
+					return false;			
+				mode_asterisk = true;
+				mode_plus = false;
+#ifdef DEBUG_MODE
+				printf("Asterisk\n");
+#endif
+				break;
+			case TYPE_GRAMMAR_PLUS :
+				// Diffentiate an escape sequence by sign.
+				if (tok->token[0] == '\\') 
+					character_rule = -tok->token[1];
+				else 
+					character_rule = tok->token[0];
+				// If plus grammar rule was skipped without matching character, then return false
+				if(mode_plus && match_len == 0)
+					return false;			
+				mode_asterisk = false;
+				mode_plus = true;
+#ifdef DEBUG_MODE
+				printf("Plus\n");
+#endif
+				break;
+
+			case TYPE_GRAMMAR_EXACT :
+				if (len - idx < tok->len)		
+					return false;
+				if (mode_plus || mode_asterisk) {
+					if (idx + tok->len > len) 
+						return false;
+					// Check for an exact match first :
+					if (strncmp(&str[idx], tok->token, tok->len)) {
+					// Next, check for the character preceded by + or *
+						if(str[idx] == -character_rule || character_rule == '.') {
+							match_len++;
+							idx++;
+							// Keep checking for the current token :
+							continue;
+						}
+						return false;
+					}
+					else {
+						// If plus grammar rule was skipped without matching character, then return false
+						if(mode_plus && match_len == 0)
+							return false;
+						idx += tok->len;
+					}
+
+				}
+				else if(strncmp(&str[idx], tok->token, tok->len)) {
+					return false;
+				}
+				mode_plus = mode_asterisk = false;
+				idx += tok->len;
+				match_len = 0;
+#ifdef DEBUG_MODE
+				printf("Exact\n");	
+#endif
+				break;
+			default :
+#ifdef DEBUG_MODE
+				exit_failure("Uknown pattern");
+#endif
+				break;			
+		}
+		next = true;
+		temp = tok;
+		tok = tok->next;
+		free(temp);
+	}
+	return true;
 
 }
-// Function to check regex (Only enough to check mqtt topic)
+
+#ifdef DEBUG_MODE
+int main(int argc, char* argv[])
+{
+	if(argc <= 2) {
+		fprintf(stderr, "Too few arguments ./%s [regex] [pattern]", argv[0]);
+	}
+	if(match(argv[1], argv[2])) {
+		printf("Match\n");
+	}
+	else {
+		printf("Mismatch\n");
+	}
+	return 0;
+}
+#endif
 /*
 bool match(const char* str, const char *pattern)
 {
@@ -220,31 +348,4 @@ int match_len = 0;
 	return true;
 }*/
 
-int main(int argc, char* argv[])
-{
-//	printf("%s\n", (match(argv[1], argv[2]) ? "Match" : "Mismatch" ));
-	token_t tok = tokenize(argv[2]), temp;
-	int tok_type;
-	while(tok) {
-		printf("%s : ",tok->token);
-		tok_type = identify_grammar_type(tok->token);
-		switch(tok_type) {
-			case TYPE_GRAMMAR_ASTERISK :
-				printf("Asterisk\n");
-				break;
-			case TYPE_GRAMMAR_PLUS :
-				printf("Plus\n");
-				break;
-			case TYPE_GRAMMAR_EXACT :
-				printf("Exact\n");	
-				break;
-			default :
-				printf("Unknown\n");
-				break;			
-		}
-		temp = tok;
-		tok = tok->next;
-		free(temp);
-	}
-	return 0;
-}
+
