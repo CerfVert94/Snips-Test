@@ -7,7 +7,7 @@ A simple regex parser with limited functionality is written as well for this pro
 
 --<br/>
 This project uses the existing open source C library of mosquitto for MQTT Broker.<br/>
-The current version of mosquitto is 1.4.8<br/>
+The current version of library is 1.4.8<br/>
 
 Eclipse Mosquitto<br/>
 Git : https://github.com/eclipse/mosquitto<br/>
