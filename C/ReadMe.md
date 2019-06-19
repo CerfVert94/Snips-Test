@@ -1,5 +1,5 @@
 
-An example of action code for C (incomplete : working is currently in progress).<br/>
+An example of action code written in C (incomplete : working is currently in progress).<br/>
 --
 Author : Roqyun KO <br/>
 
