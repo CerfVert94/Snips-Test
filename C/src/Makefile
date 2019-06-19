@@ -11,17 +11,17 @@ DFLAG=-DVERSION="\"${VERSION}\""
 
 all : snips
 
-snips : snips.o snips-regex.o
+snips : snips.o topic-regex.o
 	${CC} $(CFLAG) $(INCLUDE) $^ -o $@ $(LIBS)
 
-snips-regex : snips-regex.c
+topic-regex : topic-regex.c
 	${CC} $(CFLAG) $(INCLUDE) $^ -o $@ -DDEBUG_MODE
 
 snips.o :snips.c 
 	${CC} $(CFLAG) $(INCLUDE)   -c $< -o $@ $(DFLAG)
 
-snips-regex.o : snips-regex.c 
+topic-regex.o : topic-regex.c 
 	${CC} $(CFLAG) $(INCLUDE) -c $< -o $@ $(DFLAG)
 
 clean : 
-	-rm -f *.o snips snips-regex
+	-rm -f *.o snips topic-regex
