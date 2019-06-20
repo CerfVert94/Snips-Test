@@ -29,9 +29,9 @@ Adapted pattern for the program : ABC\/DEF\/.+\/\\\\\/\\+\/
 #include<stdlib.h>
 #ifndef _MQTT_H_
 #include<mosquitto.h>
-#include<snips-regex.h>
+#include"topic-regex.h"
 #endif
-
+//#define DEBUG_MODE
 void exit_failure(const char *format, ...) 
 {
 	va_list args;
@@ -43,7 +43,7 @@ void exit_failure(const char *format, ...)
 // Function to tokenize the pattern
 token_t tokenize(const char* cst_patt)
 {
-	token_t head = NULL, temp = NULL, new_node;
+	token_t head = NULL,  new_node;
 	int idx = 0, len = strlen(cst_patt), token_start, token_len;
 	char *patt;
 	bool detected_esc_seq = false;
@@ -74,6 +74,7 @@ token_t tokenize(const char* cst_patt)
 					exit(EXIT_FAILURE);
 				}
 				new_node->token = (char*)malloc(sizeof(char) * token_len + 1);
+				new_node->token[token_len] = '\0';
 				if (!new_node->token) {
 					fprintf(stderr, "Malloc failed\n");
 					exit(EXIT_FAILURE);
@@ -83,18 +84,8 @@ token_t tokenize(const char* cst_patt)
 				new_node->type = identify_grammar_type(new_node->token);
 				new_node->len = token_len;
 				new_node->next = NULL;
-
-				// Define head, then add the rest at the tail of the singly linked list ADT.
-				if (!head) {
-					head = new_node;  
-				}
-				else {
-					temp = head;
-					while (temp->next) {
-						temp = temp->next;
-					}	
-					temp->next = new_node;
-				}
+				free(patt);
+				return new_node;
 				
 			}
 			// The index of the next character is the start of a new pattern.
@@ -151,19 +142,21 @@ short identify_grammar_type(const char* pattern) {
 
 
 // Function to check regex (Only enough to check mqtt topic)
-bool match(const char* str, const char *pattern)
-{
-	int idx = 0, match_len = 0, len = strlen(str);
+bool match(const char* str, const char *pattern) {
+	
+	int patt_idx = 0,  idx = 0, match_len = 0, len = strlen(str), patt_len = strlen(pattern);
 	char character_rule;
-	bool mode_plus, mode_asterisk, next = true;
-	token_t tok = tokenize(pattern), temp;
-	while(tok) {
+	bool mode_plus, mode_asterisk;
+#ifdef DEBUG_MODE
+	bool next = true;
+#endif 
+	token_t tok = tokenize(pattern);
+	while(idx < len) {
 		if (idx >= len)
 			return false;
 #ifdef DEBUG_MODE
 		if(next) {
 			next = false;
-			printf("%s : ",tok->token);
 		}
 #endif
 		switch(tok->type) {
@@ -176,28 +169,36 @@ bool match(const char* str, const char *pattern)
 					character_rule = tok->token[0];
 				if(mode_plus && match_len == 0)
 					return false;
+
+				if (patt_idx >= patt_len)	
+					return true;
 				// If plus grammar rule was skipped without matching character, then return false
 				if(mode_plus && match_len == 0)
-					return false;			
+					return false;		
+	
 				mode_asterisk = true;
 				mode_plus = false;
 #ifdef DEBUG_MODE
-				printf("Asterisk\n");
+				fprintf(stderr,"Asterisk\n");
 #endif
 				break;
 			case TYPE_GRAMMAR_PLUS :
+
+				//fprintf(stderr,"Plus\n");
 				// Diffentiate an escape sequence by sign.
 				if (tok->token[0] == '\\') 
 					character_rule = -tok->token[1];
 				else 
 					character_rule = tok->token[0];
+				if (patt_idx >= patt_len - 1)	
+					return true;
 				// If plus grammar rule was skipped without matching character, then return false
 				if(mode_plus && match_len == 0)
 					return false;			
 				mode_asterisk = false;
 				mode_plus = true;
 #ifdef DEBUG_MODE
-				printf("Plus\n");
+				fprintf(stderr,"Plus\n");
 #endif
 				break;
 
@@ -211,6 +212,9 @@ bool match(const char* str, const char *pattern)
 					if (strncmp(&str[idx], tok->token, tok->len)) {
 					// Next, check for the character preceded by + or *
 						if(str[idx] == -character_rule || character_rule == '.') {
+#ifdef DEBUG_MODE
+							fprintf(stderr, "%c Plus match(%d/%d)\n", str[idx],idx + tok->len, len -1);
+#endif
 							match_len++;
 							idx++;
 							// Keep checking for the current token :
@@ -219,6 +223,10 @@ bool match(const char* str, const char *pattern)
 						return false;
 					}
 					else {
+#ifdef DEBUG_MODE
+	
+						fprintf(stderr, "%c Plus / Exact match(%d/%d)\n", str[idx],idx + tok->len, len -1);
+#endif
 						// If plus grammar rule was skipped without matching character, then return false
 						if(mode_plus && match_len == 0)
 							return false;
@@ -229,12 +237,17 @@ bool match(const char* str, const char *pattern)
 				else if(strncmp(&str[idx], tok->token, tok->len)) {
 					return false;
 				}
+#ifdef DEBUG_MODE
+				
+				fprintf(stderr, "%s : ",tok->token);
+				fprintf(stderr, "Exact\n");	
+#endif
 				mode_plus = mode_asterisk = false;
 				idx += tok->len;
+				if(idx >= len)
+					return true;
 				match_len = 0;
-#ifdef DEBUG_MODE
-				printf("Exact\n");	
-#endif
+
 				break;
 			default :
 #ifdef DEBUG_MODE
@@ -242,26 +255,36 @@ bool match(const char* str, const char *pattern)
 #endif
 				break;			
 		}
+		patt_idx += tok->len+2;
+		if (patt_idx < patt_len)		
+			tok = tokenize(&pattern[patt_idx]);
+			
+#ifdef DEBUG_MODE
 		next = true;
-		temp = tok;
-		tok = tok->next;
-		free(temp);
+		fprintf(stderr,"TOK : %s\n",tok->token);
+#endif
 	}
+#ifdef DEBUG_MODE
+	fprintf(stderr, "\n");
+#endif
 	return true;
 
 }
 
-#ifdef DEBUG_MODE
+#ifdef MAIN
 int main(int argc, char* argv[])
 {
-	if(argc <= 2) {
-		fprintf(stderr, "Too few arguments ./%s [regex] [pattern]", argv[0]);
-	}
-	if(match(argv[1], argv[2])) {
-		printf("Match\n");
+	if(match("hermes/hotword/default/detected", "/hermes\\/hotword/.+/detected")) {
+		fprintf(stderr, "Match\n");
 	}
 	else {
-		printf("Mismatch\n");
+		fprintf(stderr, "Mismatch\n");
+	}
+	if(match("hermes/intent/test", "/hermes\\/intent/.+")) {
+		fprintf(stderr, "Match\n");
+	}
+	else {
+		fprintf(stderr, "Mismatch\n");
 	}
 	return 0;
 }

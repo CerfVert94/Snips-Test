@@ -1,51 +1,67 @@
 #include <stdio.h>
+#include <string.h>
 #include <mosquitto.h>
 #include "client_shared.h"
-
+#include "topic-regex.h"
 //static char *topic = NULL;
 //static char *message = NULL;
 #define STATUS_CONNECTING 0
 #define STATUS_CONNACK_RECVD 1
 #define STATUS_WAITING 2
-static char *topic = NULL;
-static char *message = NULL;
-static long msglen = 0;
-static int qos = 0;
-static int retain = 0;
+//static char *message = NULL;
+//static long msglen = 0;
+//static int qos = 0;
+//static int retain = 0;
 static int mode = MSGMODE_NONE;
-static int status = STATUS_CONNECTING;
-static int mid_sent = 0;
+//static int status = STATUS_CONNECTING;
+//static int mid_sent = 0;
 static int last_mid = -1;
 static int last_mid_sent = -1;
-static bool connected = true;
-static char *username = NULL;
-static char *password = NULL;
+//static bool connected = true;
+//static char *username = NULL;
+//static char *password = NULL;
 static bool disconnect_sent = false;
-static bool quiet = false;
-
+//static bool quiet = false;
+#define _LOG(str) "[Snips log] "str"\n"
 #define _TOPIC_ASR(str) "hermes/asr"str
 #define _TOPIC_HOTWORD(str) "hermes/hotword"str
 #define _TOPIC_INTENT(str) "hermes/intent"
+
+char payload[] =  "{\"sessionId\":\"default\",\"text\":\"la gauche\"}";
 void my_message_callback(struct mosquitto *mosq, void *userdata, const struct mosquitto_message *message)
 {
-	if(message->payloadlen){
-	//	printf("%s %s\n", message->topic, message->payload);
+	int mid = 100;
+	if(message->payloadlen) {
+		if (!strcmp(message->topic, "hermes/asr/startListening")) {
+			fprintf(stderr, _LOG("Start listening"));
+		}
+		else if (!strcmp(message->topic, "hermes/asr/startListening")) {
+			fprintf(stderr, _LOG("Stop listening"));	
+		}
+		else if (match(message->topic, "/hermes\\/hotword/.+/detected")) {
+			fprintf(stderr, _LOG("Hotword detected"));
+		}
+		if(match(message->topic, "/hermes\\/intent/.+")) {
+			fprintf(stderr, _LOG("Intent detected"));
+			fprintf(stderr, "%s\n",(char*) message->payload);
+			mosquitto_publish(mosq, &mid, "hermes/dialogueManager/endSession",strlen(payload), (char*)payload,2, false);
+	
+		}
 		
 	}else{
-	//	printf("%s (null)\n", message->topic);
 	}
-	fflush(stdout);
 }
 
 void my_connect_callback(struct mosquitto *mosq, void *userdata, int result)
 {
-	int i;
+//	int i;
 	if(!result){
-		fprintf(stderr, "Connect succeeded\n");
+		fprintf(stdout, _LOG("Connected to MQTT broker"));
 		/* Subscribe to broker information topics on successful connect. */
 		mosquitto_subscribe(mosq, NULL, "hermes/#", 2);
-	}else{
-		fprintf(stderr, "Connect failed\n");
+	}
+	else{
+		fprintf(stderr, _LOG("Connect to MQTT broker failed"));
 	}
 }
 
@@ -63,6 +79,7 @@ void my_subscribe_callback(struct mosquitto *mosq, void *userdata, int mid, int 
 void my_publish_callback(struct mosquitto *mosq, void *obj, int mid)
 {
 	last_mid_sent = mid;
+//	fprintf(stderr, _LOG("Published : %d"), mid);
 	if(mode == MSGMODE_STDIN_LINE){
 		if(mid == last_mid){
 			mosquitto_disconnect(mosq);
@@ -82,7 +99,7 @@ void my_log_callback(struct mosquitto *mosq, void *userdata, int level, const ch
 
 int main(int argc, char *argv[])
 {
-	int i;
+	//int i;
 	char *host = "localhost";
 	int port = 1883;
 	int keepalive = 60;
@@ -99,6 +116,8 @@ int main(int argc, char *argv[])
 	mosquitto_connect_callback_set(mosq, my_connect_callback);
 	mosquitto_message_callback_set(mosq, my_message_callback);
 	mosquitto_subscribe_callback_set(mosq, my_subscribe_callback);
+	mosquitto_publish_callback_set(mosq, my_publish_callback);
+
 
 	if(mosquitto_connect(mosq, host, port, keepalive)){
 		fprintf(stderr, "Unable to connect.\n");
