@@ -21,3 +21,4 @@ json-parser<br/>
 Git : https://github.com/udp/json-parser<br/>
 
 Note : -lm flag has been manually added in the json-parser Makefile becasue of an ambiguous call towards 'pow' function<br/>
+       Executed : sudo ldconfig -v (to fix the unrecognized shared library problem.)
