@@ -3,7 +3,7 @@ CFLAG=-g -Wall
 SOVERSION=1
 LIB_DIR=../lib
 INCLUDE=-I$(LIB_DIR) -I$(LIB_DIR)/mosquitto -I$(LIB_DIR)/json-parser -L$(LIB_DIR)/mosquitto -L$(LIB_DIR)/json-parser
-LIBS=-lmosquitto -lm -lrt -lssl -lcrypto -lcares -lpthread
+LIBS=-lmosquitto -lm -lrt -lssl -lcrypto -lcares -lpthread -ljsonparser
 VERSION=1.4.8
 DFLAG=-DVERSION="\"${VERSION}\""
 
@@ -12,7 +12,7 @@ DFLAG=-DVERSION="\"${VERSION}\""
 all : snips
 
 snips : snips.o topic-regex.o
-	${CC} $(CFLAG) $(INCLUDE) $^ -o $@ $(LIBS)
+	${CC} $(CFLAG) $^ $(INCLUDE) $(LIBS) -o $@ 
 
 topic-regex : topic-regex.c
 	${CC} $(CFLAG) $(INCLUDE) $^ -o $@ -DDEBUG_MODE -DMAIN
