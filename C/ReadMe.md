@@ -20,4 +20,4 @@ The current version of the library is 1.1.0<br/>
 json-parser<br/>
 Git : https://github.com/udp/json-parser<br/>
 
-
+Note : -lm flag has been manually added in the json-parser Makefile becasue of an ambiguous call towards 'pow' function<br/>
