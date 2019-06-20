@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <mosquitto.h>
+#include <json.h>
 #include "client_shared.h"
 #include "topic-regex.h"
 //static char *topic = NULL;
@@ -27,15 +28,19 @@ static bool disconnect_sent = false;
 #define _TOPIC_HOTWORD(str) "hermes/hotword"str
 #define _TOPIC_INTENT(str) "hermes/intent"
 
-char payload[] =  "{\"sessionId\":\"default\",\"text\":\"la gauche\"}";
+char payload[128] =  "{\"sessionId\":\"default\",\"text\":\"la gauche\"}";
+char text[128];
+char sessionId[128];
+json_char *json;
+json_value *value;
+int mid = 100;
 void my_message_callback(struct mosquitto *mosq, void *userdata, const struct mosquitto_message *message)
 {
-	int mid = 100;
 	if(message->payloadlen) {
 		if (!strcmp(message->topic, "hermes/asr/startListening")) {
 			fprintf(stderr, _LOG("Start listening"));
 		}
-		else if (!strcmp(message->topic, "hermes/asr/startListening")) {
+		else if (!strcmp(message->topic, "hermes/asr/stopListening")) {
 			fprintf(stderr, _LOG("Stop listening"));	
 		}
 		else if (match(message->topic, "/hermes\\/hotword/.+/detected")) {
@@ -44,8 +49,21 @@ void my_message_callback(struct mosquitto *mosq, void *userdata, const struct mo
 		if(match(message->topic, "/hermes\\/intent/.+")) {
 			fprintf(stderr, _LOG("Intent detected"));
 			fprintf(stderr, "%s\n",(char*) message->payload);
-			mosquitto_publish(mosq, &mid, "hermes/dialogueManager/endSession",strlen(payload), (char*)payload,2, false);
-	
+			json = (json_char*) message->payload;	
+			value = json_parse(json, message->payloadlen);
+			if( !value) {
+				fprintf(stderr, "Failure : parsing json\n");	
+
+			}
+			sprintf(payload, "{\"sessionId\":\"%s\",\"text\":\"%s\"}", \
+				(char*)value->u.object.values[0].value->u.string.ptr, \
+				"j'allume la gauche");	
+//			mosquitto_publish(mosq, &mid, "hermes/dialogueManager/endSession", message->payloadlen, (char*)payload,2, false);
+			mosquitto_publish(mosq, &mid, "hermes/dialogueManager/endSession", strlen(payload), (char*)payload,2, false);
+			last_mid = mid;
+				
+			printf("%d, %s\n", mid, payload);	
+			json_value_free(value);
 		}
 		
 	}else{
@@ -79,7 +97,7 @@ void my_subscribe_callback(struct mosquitto *mosq, void *userdata, int mid, int 
 void my_publish_callback(struct mosquitto *mosq, void *obj, int mid)
 {
 	last_mid_sent = mid;
-//	fprintf(stderr, _LOG("Published : %d"), mid);
+	fprintf(stderr, _LOG("Published : %d"), mid);
 	if(mode == MSGMODE_STDIN_LINE){
 		if(mid == last_mid){
 			mosquitto_disconnect(mosq);
