@@ -1,4 +1,4 @@
-This example was originally authored by Snips and modification was made to publish a text to hermes/dialogeManager/endSession to make Snips service utter a sentence / word in response.
+This example was originally authored by Snips and a modification was made to publish a text to hermes/dialogeManager/endSession to make Snips service utter a sentence / word in response.
 
 To setup the default environment to run the node js script,<br/>
 Enter the following commands :<br/>

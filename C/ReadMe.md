@@ -1,8 +1,9 @@
 
-An example of action code written in C (incomplete : working is currently in progress).<br/>
+An example of action code written in C (incomplete : work in progress).<br/>
 --
 Author : Roqyun KO <br/>
 
+Node JS script provided is translated in C language.
 A simple regex parser with limited functionality is written as well for this project.<br/>
 
 --<br/>
