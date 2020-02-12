@@ -1,4 +1,4 @@
-This is an example of an action to be execute by Snips Flow.<br/>
+This is an example of an action, executed by Snips Flow.<br/>
 It is coded in C and NodeJS. Notably, the node js script is from Snips tutorial.<br/>
 This example is tested under Ubuntu and is yet to be tested under other OS platforms.<br/>
 
